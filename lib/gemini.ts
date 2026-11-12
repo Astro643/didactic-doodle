@@ -14,7 +14,7 @@ const failures = new Map<number, number[]>();
 export const MODELS = {
   strong: process.env.MODEL_STRONG ?? "gemini-3.8-flash",
   lite: process.env.MODEL_LITE ?? "gemini-3.5-flash-lite",
-  support: process.env.MODEL_SUPPORT ?? "gemma-4",
+  support: process.env.MODEL_SUPPORT ?? "gemma-4-31b-it",
 };
 
 export function keyCount() {
