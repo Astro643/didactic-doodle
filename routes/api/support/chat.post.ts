@@ -1,4 +1,4 @@
-import { generate, MODELS } from "../../../lib/gemini";
+import { generate, isQuota, MODELS } from "../../../lib/gemini";
 import { knowledgeSystem } from "../../../lib/knowledge";
 
 export default async ({ req }: { req: Request }) => {
@@ -17,6 +17,9 @@ export default async ({ req }: { req: Request }) => {
     return Response.json({ reply });
   } catch (e) {
     console.error("support chat failed:", e);
-    return Response.json({ detail: "Support is temporarily unavailable." }, { status: 503 });
+    const detail = isQuota(e)
+      ? "The AI is rate limited right now — please try again in a few minutes."
+      : "Support is temporarily unavailable.";
+    return Response.json({ detail }, { status: 503 });
   }
 };
