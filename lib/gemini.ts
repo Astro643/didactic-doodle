@@ -14,16 +14,17 @@ const failures = new Map<number, number[]>();
 export const MODELS = {
   strong: process.env.MODEL_STRONG ?? "gemini-3.8-flash",
   lite: process.env.MODEL_LITE ?? "gemini-3.5-flash-lite",
-  support: process.env.MODEL_SUPPORT ?? "gemma-4-31b-it",
+  support: process.env.MODEL_SUPPORT ?? "gemini-3.5-flash-lite",
 };
 
 export function keyCount() {
   return KEYS.length;
 }
 
-type GeminiError = Error & { status?: number };
+type GeminiError = Error & { status?: number; quota?: boolean };
 
-const isQuota = (e: unknown) =>
+export const isQuota = (e: unknown) =>
+  (e as GeminiError)?.quota === true ||
   (e as GeminiError)?.status === 429 ||
   /RESOURCE_EXHAUSTED|quota|rate/i.test(String((e as Error)?.message ?? ""));
 
@@ -38,11 +39,13 @@ async function generateContent(model: string, body: Record<string, unknown>) {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-goog-api-key": KEYS[i] },
         body: JSON.stringify(body),
+        signal: AbortSignal.timeout(90_000),
       });
       if (!res.ok) {
         const text = await res.text().catch(() => "");
         const e: GeminiError = new Error(`gemini ${res.status}: ${text.slice(0, 500)}`);
         e.status = res.status;
+        e.quota = res.status === 429;
         throw e;
       }
       const data = await res.json();
