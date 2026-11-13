@@ -1,8 +1,5 @@
 import { generate, MODELS } from "../../../lib/gemini";
-
-const CHAT_SYSTEM =
-  "You are Controller's support assistant for a Discord server management product. " +
-  "Answer the user's question clearly and briefly. Do not invent features."
+import { knowledgeSystem } from "../../../lib/knowledge";
 
 export default async ({ req }: { req: Request }) => {
   const { message, history } = await req.json().catch(() => ({} as Record<string, unknown>));
@@ -16,7 +13,7 @@ export default async ({ req }: { req: Request }) => {
       .slice(-8)
       .map((h) => `${h.role === "user" ? "User" : "Assistant"}: ${(h.text as string).slice(0, 800)}`)
     turns.push(`User: ${message.trim().slice(0, 600)}`)
-    const reply = await generate(MODELS.support, turns.join("\n"), CHAT_SYSTEM);
+    const reply = await generate(MODELS.support, turns.join("\n"), knowledgeSystem());
     return Response.json({ reply });
   } catch (e) {
     console.error("support chat failed:", e);
