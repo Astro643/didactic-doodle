@@ -12,7 +12,11 @@ const cooldowns = new Map<number, number>();
 const failures = new Map<number, number[]>();
 
 export const MODELS = {
-  strong: process.env.MODEL_STRONG ?? "gemini-3.8-flash",
+  strong: process.env.MODEL_STRONG ?? "gemini-4-hydrogen",
+  strongBackups: [
+    process.env.MODEL_STRONG_BACKUP1 ?? "gemini-decision-1",
+    process.env.MODEL_STRONG_BACKUP2 ?? "gemini-3.5-flash-lite",
+  ],
   lite: process.env.MODEL_LITE ?? "gemini-3.5-flash-lite",
   support: process.env.MODEL_SUPPORT ?? "gemini-3.5-flash-lite",
 };
@@ -28,63 +32,65 @@ export const isQuota = (e: unknown) =>
   (e as GeminiError)?.status === 429 ||
   /RESOURCE_EXHAUSTED|quota|rate/i.test(String((e as Error)?.message ?? ""));
 
-async function generateContent(model: string, body: Record<string, unknown>) {
+async function generateContent(models: string[], body: Record<string, unknown>) {
   let last: unknown;
-  for (let n = 0; n < KEYS.length; n++) {
-    const i = (cursor + n) % KEYS.length;
-    if ((cooldowns.get(i) ?? 0) > Date.now()) continue;
-    cursor = (i + 1) % KEYS.length;
-    try {
-      const res = await fetch(`${BASE}/${model}:generateContent`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "x-goog-api-key": KEYS[i] },
-        body: JSON.stringify(body),
-        signal: AbortSignal.timeout(90_000),
-      });
-      if (!res.ok) {
-        const text = await res.text().catch(() => "");
-        const e: GeminiError = new Error(`gemini ${res.status}: ${text.slice(0, 500)}`);
-        e.status = res.status;
-        e.quota = res.status === 429;
-        throw e;
+  for (const model of models) {
+    for (let n = 0; n < KEYS.length; n++) {
+      const i = (cursor + n) % KEYS.length;
+      if ((cooldowns.get(i) ?? 0) > Date.now()) continue;
+      cursor = (i + 1) % KEYS.length;
+      try {
+        const res = await fetch(`${BASE}/${model}:generateContent`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "x-goog-api-key": KEYS[i] },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(90_000),
+        });
+        if (!res.ok) {
+          const text = await res.text().catch(() => "");
+          const e: GeminiError = new Error(`gemini ${res.status}: ${text.slice(0, 500)}`);
+          e.status = res.status;
+          e.quota = res.status === 429;
+          throw e;
+        }
+        const data = await res.json();
+        cooldowns.delete(i);
+        failures.delete(i);
+        const parts = data?.candidates?.[0]?.content?.parts ?? [];
+        return parts.map((p: { text?: string }) => p.text ?? "").join("").trim();
+      } catch (e) {
+        last = e;
+        if (!isQuota(e)) continue;
+        const msg = String((e as Error)?.message ?? "");
+        const day = new Date();
+        const reset = Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate() + 1);
+        const recent = (failures.get(i) ?? []).filter((t) => Date.now() - t < 900_000);
+        recent.push(Date.now());
+        failures.set(i, recent);
+        const retry = Number(/retryDelay["': ]*(\d+)s/.exec(msg)?.[1] ?? 60);
+        const daily = /per ?day|RPD/i.test(msg) || recent.length >= 3;
+        cooldowns.set(
+          i,
+          Date.now() + (daily ? Math.max(60, Math.floor((reset - Date.now()) / 1000)) : Math.min(300, Math.max(60, retry))) * 1000,
+        );
       }
-      const data = await res.json();
-      cooldowns.delete(i);
-      failures.delete(i);
-      const parts = data?.candidates?.[0]?.content?.parts ?? [];
-      return parts.map((p: { text?: string }) => p.text ?? "").join("").trim();
-    } catch (e) {
-      if (!isQuota(e)) throw e;
-      last = e;
-      const msg = String((e as Error)?.message ?? "");
-      const day = new Date();
-      const reset = Date.UTC(day.getUTCFullYear(), day.getUTCMonth(), day.getUTCDate() + 1);
-      const recent = (failures.get(i) ?? []).filter((t) => Date.now() - t < 900_000);
-      recent.push(Date.now());
-      failures.set(i, recent);
-      const retry = Number(/retryDelay["': ]*(\d+)s/.exec(msg)?.[1] ?? 60);
-      const daily = /per ?day|RPD/i.test(msg) || recent.length >= 3;
-      cooldowns.set(
-        i,
-        Date.now() + (daily ? Math.max(60, Math.floor((reset - Date.now()) / 1000)) : Math.min(300, Math.max(60, retry))) * 1000,
-      );
     }
   }
   throw last ?? new Error("no GEMINI_API_KEYS configured");
 }
 
-export async function generate(model: string, prompt: string, system?: string) {
+export async function generate(model: string | string[], prompt: string, system?: string) {
   const body: Record<string, unknown> = { contents: [{ parts: [{ text: prompt }] }] };
   if (system) body.systemInstruction = { parts: [{ text: system }] };
-  return generateContent(model, body);
+  return generateContent(Array.isArray(model) ? model : [model], body);
 }
 
-export async function generateJson<T>(model: string, prompt: string, system: string): Promise<T> {
+export async function generateJson<T>(model: string | string[], prompt: string, system: string): Promise<T> {
   const body: Record<string, unknown> = {
     contents: [{ parts: [{ text: prompt }] }],
     systemInstruction: { parts: [{ text: system }] },
     generationConfig: { responseMimeType: "application/json" },
   };
-  const text = await generateContent(model, body);
+  const text = await generateContent(Array.isArray(model) ? model : [model], body);
   return JSON.parse(text || "{}") as T;
 }
