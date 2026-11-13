@@ -14,8 +14,8 @@ const failures = new Map<number, number[]>();
 export const MODELS = {
   strong: process.env.MODEL_STRONG ?? "gemini-4-hydrogen",
   strongBackups: [
-    process.env.MODEL_STRONG_BACKUP1 ?? "gemini-decision-1",
-    process.env.MODEL_STRONG_BACKUP2 ?? "gemini-3.5-flash-lite",
+    process.env.MODEL_STRONG_BACKUP1 ?? "gemini-3.5-flash-lite",
+    process.env.MODEL_STRONG_BACKUP2 ?? "gemini-decision-1",
   ],
   lite: process.env.MODEL_LITE ?? "gemini-3.5-flash-lite",
   support: process.env.MODEL_SUPPORT ?? "gemini-3.5-flash-lite",
