@@ -1,4 +1,4 @@
-import { generate, generateJson, MODELS } from "../../lib/gemini";
+import { generate, generateJson, isQuota, MODELS } from "../../lib/gemini";
 import { knowledgeSystem } from "../../lib/knowledge";
 import type { Plan } from "../../lib/plan";
 
@@ -19,7 +19,7 @@ export default async ({ req }: { req: Request }) => {
   }
   const message = prompt.trim();
   try {
-    const route = await generateJson<{ intent: "question" | "goal" }>(MODELS.support, message, ROUTER_SYSTEM);
+    const route = await generateJson<{ intent: "question" | "goal" }>(MODELS.lite, message, ROUTER_SYSTEM);
     if (route.intent !== "goal") {
       const answer = await generate(MODELS.support, message, knowledgeSystem());
       return Response.json({ incomplete: true, question: answer, complete: false });
@@ -28,6 +28,9 @@ export default async ({ req }: { req: Request }) => {
     return Response.json({ summary: plan.summary, steps: plan.steps, complete: true });
   } catch (e) {
     console.error("preview failed:", e);
-    return Response.json({ detail: "Could not generate a plan right now." }, { status: 503 });
+    const detail = isQuota(e)
+      ? "The AI is rate limited right now — please try again in a few minutes."
+      : "Could not generate a plan right now.";
+    return Response.json({ detail }, { status: 503 });
   }
 };
