@@ -24,7 +24,7 @@ export default async ({ req }: { req: Request }) => {
       const answer = await generate(MODELS.support, message, knowledgeSystem());
       return Response.json({ incomplete: true, question: answer, complete: false });
     }
-    const plan = await generateJson<Plan>(MODELS.strong, `Goal: ${message}`, PLAN_SYSTEM);
+    const plan = await generateJson<Plan>([MODELS.strong, ...MODELS.strongBackups], `Goal: ${message}`, PLAN_SYSTEM);
     return Response.json({ summary: plan.summary, steps: plan.steps, complete: true });
   } catch (e) {
     console.error("preview failed:", e);
