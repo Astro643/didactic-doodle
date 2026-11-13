@@ -20,7 +20,12 @@ async function run(plan: Plan): Promise<StepResult[]> {
   const results: StepResult[] = [];
   let sandbox: Sandbox | null = null;
   try {
-    const sbx = await Sandbox.create({ persistent: false });
+    const sbx = process.env.SANDBOX_SNAPSHOT_ID
+      ? await Sandbox.create({
+          source: { type: "snapshot", snapshotId: process.env.SANDBOX_SNAPSHOT_ID },
+          persistent: false,
+        })
+      : await Sandbox.create({ persistent: false });
     sandbox = sbx;
     for (const step of plan.steps) {
       try {
