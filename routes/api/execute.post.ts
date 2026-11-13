@@ -10,7 +10,9 @@ const ROUTER_SYSTEM =
 
 const PLAN_SYSTEM =
   "You are Controller's planner. Given a goal for a Discord server, produce a short summary and an ordered list of concrete steps. " +
-  "Each step has a short label and a machine-readable action. Reply with JSON only: " +
+  "Each step has a short label and an action. Every action must be a real POSIX shell command that runs with `sh -lc` in a fresh Debian-like Linux sandbox " +
+  "(curl, git, jq, coreutils available; no GUI, no persisted state between steps). One command per step; pass Discord bot requests through curl with " +
+  "the token read from the $DISCORD_TOKEN environment variable. Never invent pseudo-commands. Reply with JSON only: " +
   "{\"summary\": string, \"steps\": [{\"label\": string, \"action\": string}]}."
 
 export default async ({ req }: { req: Request }) => {
