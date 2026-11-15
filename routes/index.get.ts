@@ -3,7 +3,6 @@ export default async () => {
     name: "controller-backend",
     status: "ok",
     endpoints: [
-      "POST /api/preview",
       "POST /api/execute",
       "GET /api/status/:id",
       "POST /api/cancel/:id",

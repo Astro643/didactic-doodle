@@ -11,7 +11,6 @@ Minimal Discord-server-agent backend. No database, no Redis, no queues, no conta
 
 ```
 routes/api/
-  preview.post.ts        POST /api/preview        prompt -> plan or answer (sync, Gemini)
   execute.post.ts        POST /api/execute        prompt|plan -> {command_id, status}
   status/[id].get.ts     GET  /api/status/:id     run status + result
   cancel/[id].post.ts    POST /api/cancel/:id     cancel a run
