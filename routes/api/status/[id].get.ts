@@ -1,5 +1,5 @@
 import { getRun } from "workflow/api";
-import { isAgentAuthorized } from "../../../lib/agent-auth";
+import { isGreenProxyAuthorized } from "../../../lib/green-proxy-auth";
 
 async function latestAgentEvent(run: ReturnType<typeof getRun>) {
   const stream = run.getReadable<Uint8Array>({ namespace: "agent" });
@@ -23,7 +23,7 @@ export default async ({ req, context }: { req: Request; context: { params?: { id
     const run = getRun(id);
     const status = await run.status;
     const progress = await latestAgentEvent(run);
-    if (progress && !isAgentAuthorized(req)) {
+    if (progress && !isGreenProxyAuthorized(req)) {
       return Response.json({ detail: "unauthorized" }, { status: 401 });
     }
     if (status === "completed") {
@@ -55,9 +55,6 @@ export default async ({ req, context }: { req: Request; context: { params?: { id
         error = String((e as Error)?.message ?? e).slice(0, 500);
       }
       return Response.json({ status, error });
-    }
-    if (progress?.status === "awaiting_approval") {
-      return Response.json({ status: "awaiting_approval", approval: progress });
     }
     return Response.json({ status, ...(progress ? { progress } : {}) });
   } catch (e) {

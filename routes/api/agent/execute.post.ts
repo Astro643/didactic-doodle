@@ -1,10 +1,10 @@
 import { start } from "workflow/api";
 import { parseAgentPlanInput } from "../../../lib/agent";
-import { requireAgentAuthorization } from "../../../lib/agent-auth";
+import { requireGreenProxyAuthorization } from "../../../lib/green-proxy-auth";
 import { executeAgent } from "../../../workflows/agent";
 
 export default async ({ req }: { req: Request }) => {
-  const unauthorized = requireAgentAuthorization(req);
+  const unauthorized = requireGreenProxyAuthorization(req);
   if (unauthorized) return unauthorized;
   const body = await req.json().catch(() => ({} as { agent_plan?: unknown }));
   const plan = parseAgentPlanInput(body.agent_plan);

@@ -1,5 +1,5 @@
 import { getRun } from "workflow/api";
-import { requireAgentAuthorization } from "../../../lib/agent-auth";
+import { requireGreenProxyAuthorization } from "../../../lib/green-proxy-auth";
 
 export default async ({ req, context }: { req: Request; context: { params?: { id?: string } } }) => {
   const id = context.params?.id;
@@ -8,7 +8,7 @@ export default async ({ req, context }: { req: Request; context: { params?: { id
     const run = getRun(id);
     const agentEvents = run.getReadable<Uint8Array>({ namespace: "agent" });
     if ((await agentEvents.getTailIndex()) >= 0) {
-      const unauthorized = requireAgentAuthorization(req);
+      const unauthorized = requireGreenProxyAuthorization(req);
       if (unauthorized) return unauthorized;
     }
     await run.cancel();
