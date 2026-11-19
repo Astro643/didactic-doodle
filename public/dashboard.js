@@ -16,7 +16,7 @@ const controls = [
   {
     key: "aiEnabled",
     title: "AI requests",
-    description: "Allow Gemini-powered planning, agent reasoning, and responses.",
+    description: "Allow AxForge-powered planning, agent reasoning, and responses.",
   },
   {
     key: "agentEnabled",
@@ -208,6 +208,53 @@ window.setInterval(() => {
     loadServiceStatus();
   }
 }, 15000);
+
+const playgroundForm = document.querySelector("#playground-form");
+const playgroundStatus = document.querySelector("#playground-status");
+const playgroundResponse = document.querySelector("#playground-response");
+
+// Show the system instructions field only in admin mode.
+const systemWrap = document.querySelector("#playground-system-wrap");
+if (systemWrap && document.body.dataset.playgroundMode === "admin") systemWrap.hidden = false;
+
+playgroundForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const button = document.querySelector("#playground-submit");
+  button.disabled = true;
+  playgroundStatus.textContent = "Generating response…";
+  playgroundResponse.hidden = true;
+  try {
+    // Determine endpoint and payload based on playground mode.
+    // Fall back to the admin endpoint when the page predates the data attributes,
+    // otherwise fetch("undefined") throws a TypeError before the form handler can
+    // preventDefault and the browser natively submits, reloading the page.
+    const playgroundUrl = document.body.dataset.playgroundUrl || "/api/playground";
+    const isAdminMode = document.body.dataset.playgroundMode === "admin";
+    
+    const payload = {
+      prompt: document.querySelector("#playground-prompt").value,
+    };
+    
+    if (isAdminMode) {
+      const systemField = document.querySelector("#playground-system");
+      if (systemField && systemField.value.trim()) {
+        payload.system = systemField.value.trim();
+      }
+    }
+    
+    const result = await request(playgroundUrl, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+    playgroundResponse.textContent = result.response;
+    playgroundResponse.hidden = false;
+    playgroundStatus.textContent = "Response ready";
+  } catch (error) {
+    playgroundStatus.textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+});
 
 async function loadServiceStatus() {
   const output = document.querySelector("#service-status");

@@ -18,7 +18,8 @@ body {
 }
 
 button,
-input {
+input,
+textarea {
   font: inherit;
 }
 
@@ -130,17 +131,30 @@ label {
   font-weight: 650;
 }
 
-#signin input {
+#signin input,
+textarea {
   width: 100%;
-  min-height: 46px;
   padding: 10px 12px;
   border: 1px solid #d5d5d5;
-  border-radius: 6px;
+  border-radius: 8px;
   background: #fff;
   color: #171717;
 }
 
+#signin input {
+  min-height: 46px;
+  border-radius: 6px;
+}
+
+textarea {
+  display: block;
+  min-height: 88px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
 input:focus-visible,
+textarea:focus-visible,
 button:focus-visible,
 a:focus-visible {
   outline: 2px solid #555;
@@ -408,6 +422,70 @@ a:focus-visible {
   margin: 14px 0 0;
   color: #777;
   font-size: 12px;
+}
+
+.playground-section {
+  padding: 30px 0 54px;
+  border-top: 1px solid #e8e8e8;
+}
+
+.playground-model,
+.optional-label {
+  color: #737373;
+  font-size: 12px;
+}
+
+.playground-model {
+  padding: 7px 10px;
+  border: 1px solid #dedede;
+  border-radius: 999px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.playground-copy {
+  margin: 0 0 20px;
+  color: #737373;
+  font-size: 13px;
+}
+
+#playground-form label {
+  margin: 18px 0 7px;
+}
+
+.optional-label {
+  margin-left: 5px;
+  font-weight: 400;
+}
+
+.playground-actions {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.playground-status {
+  color: #737373;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.playground-response {
+  max-height: 480px;
+  overflow: auto;
+  margin: 20px 0 0;
+  padding: 18px;
+  border: 1px solid #dedede;
+  border-radius: 8px;
+  background: #f7f7f7;
+  color: #171717;
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
 }
 
 .notice {
