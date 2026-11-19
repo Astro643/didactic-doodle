@@ -5,6 +5,9 @@ export default async () => {
     endpoints: [
       "POST /api/preview",
       "POST /api/execute",
+      "POST /api/agent/preview",
+      "POST /api/agent/execute",
+      "POST /api/agent/approve/:id",
       "GET /api/status/:id",
       "POST /api/cancel/:id",
       "GET /api/public/status",
