@@ -1,17 +1,18 @@
 import { playgroundPage } from "../lib/playground-page";
 
-function escapeAttribute(value: string) {
-  return value.replace(/[&"<>]/g, (character) => ({
+function escapeHtml(value: string) {
+  return value.replace(/[&<>"']/g, (character) => ({
     "&": "&amp;",
-    '"': "&quot;",
     "<": "&lt;",
     ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;",
   })[character]!);
 }
 
 export default async () => {
-  const consoleUrl = escapeAttribute(process.env.CONTROLLER_CONSOLE_URL ?? "");
-  return new Response(playgroundPage(), {
+  const consoleUrl = escapeHtml(process.env.CONTROLLER_CONSOLE_URL ?? "");
+  return new Response(playgroundPage({ consoleUrl, admin: true }), {
     headers: {
       "Content-Type": "text/html; charset=utf-8",
       "Cache-Control": "no-store",

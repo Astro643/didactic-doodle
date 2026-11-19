@@ -1,4 +1,8 @@
-export function playgroundPage() {
+export function playgroundPage(opts: { consoleUrl?: string; admin?: boolean } = {}) {
+  const consoleAttr = opts.consoleUrl ? ` data-console-url="${opts.consoleUrl}"` : "";
+  const modeAttr = opts.admin
+    ? ` data-playground-mode="admin" data-playground-url="/api/playground"`
+    : ` data-playground-mode="public" data-playground-url="/api/public/playground"`;
   return `<!doctype html>
 <html lang="en">
   <head>
@@ -9,7 +13,7 @@ export function playgroundPage() {
     <link rel="stylesheet" href="/dashboard.css">
     <script src="/dashboard.js" defer></script>
   </head>
-  <body data-playground-mode="public" data-playground-url="/api/public/playground">
+  <body${modeAttr}${consoleAttr}>
     <main class="page">
       <section id="dashboard">
         <header class="topbar">
@@ -48,6 +52,10 @@ export function playgroundPage() {
           <form id="playground-form">
             <label for="playground-prompt">Prompt</label>
             <textarea id="playground-prompt" name="prompt" rows="6" maxlength="4000" required placeholder="What would you like to try?"></textarea>
+            <div id="playground-system-wrap" hidden>
+              <label for="playground-system">System instructions (optional)</label>
+              <textarea id="playground-system" name="system" rows="3" maxlength="4000" placeholder="Optional system prompt"></textarea>
+            </div>
             <div class="playground-actions">
               <span id="playground-status" class="playground-status" role="status" aria-live="polite"></span>
               <button id="playground-submit" class="button button-dark" type="submit">Run prompt</button>

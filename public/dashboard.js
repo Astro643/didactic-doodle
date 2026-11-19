@@ -213,6 +213,10 @@ const playgroundForm = document.querySelector("#playground-form");
 const playgroundStatus = document.querySelector("#playground-status");
 const playgroundResponse = document.querySelector("#playground-response");
 
+// Show the system instructions field only in admin mode.
+const systemWrap = document.querySelector("#playground-system-wrap");
+if (systemWrap && document.body.dataset.playgroundMode === "admin") systemWrap.hidden = false;
+
 playgroundForm.addEventListener("submit", async (event) => {
   event.preventDefault();
   const button = document.querySelector("#playground-submit");
@@ -220,8 +224,11 @@ playgroundForm.addEventListener("submit", async (event) => {
   playgroundStatus.textContent = "Generating response…";
   playgroundResponse.hidden = true;
   try {
-    // Determine endpoint and payload based on playground mode
-    const playgroundUrl = document.body.dataset.playgroundUrl;
+    // Determine endpoint and payload based on playground mode.
+    // Fall back to the admin endpoint when the page predates the data attributes,
+    // otherwise fetch("undefined") throws a TypeError before the form handler can
+    // preventDefault and the browser natively submits, reloading the page.
+    const playgroundUrl = document.body.dataset.playgroundUrl || "/api/playground";
     const isAdminMode = document.body.dataset.playgroundMode === "admin";
     
     const payload = {
