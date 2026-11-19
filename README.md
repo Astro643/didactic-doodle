@@ -6,7 +6,7 @@ Discord-server-agent backend with a Green Proxy admin control plane. It uses no 
 - **Orchestration:** [Vercel Workflows](https://vercel.com/docs/workflow-durable-execution) — the workflow run *is* the database
 - **Admin controls:** Upstash Redis REST stores the global pause and AI, agent, Sandbox, Discord, and support switches
 - **Execution:** one throwaway [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox) per run (`persistent: false`)
-- **AI:** The legacy preview/execute routes use a single structured Gemini request. The multi-turn agent routes combine Sandbox tools with scoped Discord tools and execute requested actions immediately, including high-impact actions, then continue from tool results. Gemini uses raw `fetch` with a hand-rolled key pool and in-memory cooldowns.
+- **AI:** The legacy preview/execute routes use a single structured AxForge request. The multi-turn agent routes combine Sandbox tools with scoped Discord tools and execute requested actions immediately, including high-impact actions, then continue from tool results. AxForge uses its OpenAI-compatible chat-completions API.
 
 ## Layout
 
@@ -20,7 +20,8 @@ routes/api/
   admin/
     controls.get.ts     GET  /api/admin/controls   read admin switches
     controls.patch.ts   PATCH /api/admin/controls  update admin switches
-  preview.post.ts        POST /api/preview        prompt -> plan or answer (sync, Gemini)
+  preview.post.ts        POST /api/preview        prompt -> plan or answer (sync, AxForge)
+  playground.post.ts    POST /api/playground     prompt -> AxForge response (admin-only)
   execute.post.ts        POST /api/execute        prompt|plan -> {command_id, status}
   agent/
     preview.post.ts      POST /api/agent/preview  prompt -> tool plan or answer
@@ -42,7 +43,7 @@ lib/
   green-proxy-auth.ts  signed session cookie and bearer-key validation
   agent-tools.ts         bounded Sandbox and Discord tool registry
   agent.ts               structured responses and multi-turn model calls
-  gemini.ts              key pool + raw fetch, in-memory cooldowns
+  axforge.ts             single API key + OpenAI-compatible chat completions
   knowledge.ts           support facts and live key status
   plan.ts                plan types + server-side validation
 ```
@@ -51,10 +52,7 @@ lib/
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `GEMINI_API_KEYS` (or `GEMINI_API_KEY`, `GEMINI_API_KEY_1..4`) | yes | comma-separated Gemini keys, rotated with cooldowns |
-| `MODEL_STRONG` | no | primary plan-or-answer model (default: `gemini-4-hydrogen`) |
-| `MODEL_STRONG_BACKUP1` / `MODEL_STRONG_BACKUP2` | no | fallback models (defaults: `gemini-3.5-flash-lite`, `gemini-decision-1`) |
-| `MODEL_SUPPORT` | no | support-chat model (default: `gemini-3.5-flash-lite`) |
+| `AXFORGE_API_KEY` | yes | single AxForge API key, sent as a Bearer token |
 | `GREEN_PROXY_PASSWORD` | yes | administrator password for the sign-in page (use at least 16 characters) |
 | `GREEN_PROXY_SESSION_SECRET` | yes | random secret of at least 32 characters used to sign 12-hour sessions |
 | `UPSTASH_REDIS_REST_URL` | yes in production | Upstash Redis REST URL for shared control state |
@@ -68,6 +66,10 @@ lib/
 Visiting the backend root opens the Green Proxy admin sign-in page. After signing in, admins can pause all operations or independently switch AI requests, agent workflows, Sandbox execution, Discord tools, and support chat. These controls are enforced by the API middleware and active workflows, not just hidden in the UI. In local development, controls use temporary in-memory state; production requires Upstash Redis REST credentials so all Vercel instances share the same state. The user-facing Console stays separate and can be linked with `CONTROLLER_CONSOLE_URL`.
 
 All `/api` endpoints require a valid Green Proxy session, except the sign-in/session/logout endpoints. A configured `AGENT_API_KEY` is accepted only for multi-turn agent preview, execution, and their status/cancel routes. Requested Discord actions execute immediately without a separate approval step. Sandbox web search is restricted to DuckDuckGo and does not receive the Discord token.
+
+The admin dashboard includes an AI playground for testing prompts and optional system instructions against the configured AxForge model. Requests use the server-side API key and are blocked when AI operations are disabled.
+
+AI requests use the `qwen3.8-flash-next` model at `https://api.axforge.ai/v1/chat/completions`.
 
 ## Deploy
 

@@ -1,4 +1,4 @@
-import { generateJson, MODELS } from "./gemini";
+import { generateJson, MODELS } from "./axforge";
 import { knowledgeFacts } from "./knowledge";
 import { parsePlan, type Plan } from "./plan";
 import {
@@ -113,17 +113,9 @@ async function generateValidated<T>(
   system: string,
   parse: (value: unknown) => T | null,
 ): Promise<T> {
-  let lastError: unknown;
-  for (const model of [MODELS.strong, ...MODELS.strongBackups]) {
-    try {
-      const response = parse(await generateJson<unknown>(model, prompt, system));
-      if (response) return response;
-      lastError = new Error(`gemini ${model} returned an invalid agent response`);
-    } catch (error) {
-      lastError = error;
-    }
-  }
-  throw lastError ?? new Error("no agent models configured");
+  const response = parse(await generateJson<unknown>(MODELS.agent, prompt, system));
+  if (!response) throw new Error(`AxForge ${MODELS.agent} returned an invalid agent response`);
+  return response;
 }
 
 export async function generateAgentPlan(prompt: string): Promise<AgentPlan | { type: "answer"; answer: string }> {
@@ -151,15 +143,7 @@ function parseAgentResponse(input: unknown): AgentResponse | null {
 }
 
 export async function generateAgentResponse(prompt: string): Promise<AgentResponse> {
-  let lastError: unknown;
-  for (const model of [MODELS.strong, ...MODELS.strongBackups]) {
-    try {
-      const response = parseAgentResponse(await generateJson<unknown>(model, prompt, SYSTEM));
-      if (response) return response;
-      lastError = new Error(`gemini ${model} returned an invalid agent response`);
-    } catch (e) {
-      lastError = e;
-    }
-  }
-  throw lastError ?? new Error("no agent models configured");
+  const response = parseAgentResponse(await generateJson<unknown>(MODELS.agent, prompt, SYSTEM));
+  if (!response) throw new Error(`AxForge ${MODELS.agent} returned an invalid agent response`);
+  return response;
 }

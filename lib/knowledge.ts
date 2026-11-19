@@ -1,4 +1,4 @@
-import { keyCount } from "./gemini";
+import { keyCount } from "./axforge";
 
 const FACTS = [
   "Product: Controller — agentic automation protected by the Green Proxy administrator sign-in. The dashboard lets an authenticated operator preview and run tasks, inspect status, cancel a run, and use support chat.",
@@ -27,7 +27,7 @@ export function knowledgeFacts() {
   const keys = keyCount();
   const status =
     keys > 0
-      ? `Live status: All systems operational (${keys} Gemini key(s) loaded).`
-      : "Live status: DEGRADED — no Gemini API keys configured, so AI features may fail right now.";
+      ? `Live status: All systems operational (${keys} AxForge API key configured).`
+      : "Live status: DEGRADED — AXFORGE_API_KEY is not configured, so AI features may fail right now.";
   return `${FACTS}\n\n${status}`;
 }

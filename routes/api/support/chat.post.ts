@@ -1,4 +1,4 @@
-import { generate, isQuota, MODELS } from "../../../lib/gemini";
+import { generate, isQuota, MODELS } from "../../../lib/axforge";
 import { knowledgeSystem } from "../../../lib/knowledge";
 
 export default async ({ req }: { req: Request }) => {

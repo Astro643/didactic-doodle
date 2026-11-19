@@ -1,4 +1,4 @@
-import { keyCount } from "../../../lib/gemini";
+import { keyCount } from "../../../lib/axforge";
 import { getGreenProxyControls, type GreenProxyControls } from "../../../lib/green-proxy-controls";
 
 export default async () => {
@@ -21,7 +21,7 @@ export default async () => {
         ? "All systems operational"
         : !allEnabled
           ? "Some services are paused"
-          : "AI keys missing",
+          : "AxForge API key missing",
     updated: new Date().toISOString(),
     components: [
       {
@@ -38,8 +38,8 @@ export default async () => {
         detail: !controls.aiEnabled
           ? "AI requests disabled"
           : keys > 0
-            ? `${keys} Gemini key(s) loaded`
-            : "No Gemini keys configured",
+            ? "AxForge API key configured"
+            : "No AxForge API key configured",
         status: controls.aiEnabled && keys > 0 && controls.systemEnabled ? "operational" : "paused",
       },
       {

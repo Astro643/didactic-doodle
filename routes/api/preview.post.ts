@@ -1,5 +1,5 @@
 import { generateAgentResponse } from "../../lib/agent";
-import { isQuota } from "../../lib/gemini";
+import { isQuota } from "../../lib/axforge";
 
 export default async ({ req }: { req: Request }) => {
   const { prompt } = await req.json().catch(() => ({} as { prompt?: unknown }));
