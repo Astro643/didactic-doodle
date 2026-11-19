@@ -1,18 +1,5 @@
-import { generate, generateJson, isQuota, MODELS } from "../../lib/gemini";
-import { knowledgeSystem } from "../../lib/knowledge";
-import type { Plan } from "../../lib/plan";
-
-const ROUTER_SYSTEM =
-  "You are Controller, an agent that manages Discord servers. " +
-  "Decide whether the user's message is a question about how things work, or an actionable goal for their server. " +
-  "Reply with JSON only: {\"intent\": \"question\"} or {\"intent\": \"goal\"}."
-
-const PLAN_SYSTEM =
-  "You are Controller's planner. Given a goal for a Discord server, produce a short summary and an ordered list of concrete steps. " +
-  "Each step has a short label and an action. Every action must be a real POSIX shell command that runs with `sh -lc` in a fresh Debian-like Linux sandbox " +
-  "(python3, ripgrep, curl, git, jq, unzip/zip, dig, coreutils available; no GUI, no persisted state between steps). One command per step; pass Discord bot requests through curl with " +
-  "the token read from the $DISCORD_TOKEN environment variable. Never invent pseudo-commands. Reply with JSON only: " +
-  "{\"summary\": string, \"steps\": [{\"label\": string, \"action\": string}]}."
+import { generateAgentResponse } from "../../lib/agent";
+import { isQuota } from "../../lib/gemini";
 
 export default async ({ req }: { req: Request }) => {
   const { prompt } = await req.json().catch(() => ({} as { prompt?: unknown }));
@@ -21,12 +8,11 @@ export default async ({ req }: { req: Request }) => {
   }
   const message = prompt.trim();
   try {
-    const route = await generateJson<{ intent: "question" | "goal" }>(MODELS.lite, message, ROUTER_SYSTEM);
-    if (route.intent !== "goal") {
-      const answer = await generate(MODELS.support, message, knowledgeSystem());
-      return Response.json({ incomplete: true, question: answer, complete: false });
+    const response = await generateAgentResponse(message);
+    if (response.type === "answer") {
+      return Response.json({ incomplete: true, question: response.answer, complete: false });
     }
-    const plan = await generateJson<Plan>([MODELS.strong, ...MODELS.strongBackups], `Goal: ${message}`, PLAN_SYSTEM);
+    const plan = response.plan;
     return Response.json({ summary: plan.summary, steps: plan.steps, complete: true });
   } catch (e) {
     console.error("preview failed:", e);

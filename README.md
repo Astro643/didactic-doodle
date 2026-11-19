@@ -5,7 +5,7 @@ Minimal Discord-server-agent backend. No database, no Redis, no queues, no conta
 - **Framework:** Nitro v3 with the `workflow/nitro` module (compiles the `use workflow` / `use step` directives)
 - **Orchestration:** [Vercel Workflows](https://vercel.com/docs/workflow-durable-execution) — the workflow run *is* the database
 - **Execution:** one throwaway [Vercel Sandbox](https://vercel.com/docs/vercel-sandbox) per run (`persistent: false`)
-- **AI:** Gemini called with raw `fetch`, hand-rolled key pool with in-memory cooldowns
+- **AI:** Preview and execute use one structured Gemini request to return either a support answer or a plan; plan-or-answer responses fall back through the configured strong-model chain. Gemini uses raw `fetch` with a hand-rolled key pool and in-memory cooldowns.
 
 ## Layout
 
@@ -20,7 +20,9 @@ routes/api/
 workflows/
   execute.ts             one workflow, one step, one sandbox per run
 lib/
+  agent.ts               one-call structured response + model fallback chain
   gemini.ts              key pool + raw fetch, in-memory cooldowns
+  knowledge.ts           support facts and live key status
   plan.ts                plan types + server-side validation
 ```
 
@@ -29,7 +31,9 @@ lib/
 | Variable | Required | Purpose |
 | --- | --- | --- |
 | `GEMINI_API_KEYS` (or `GEMINI_API_KEY`, `GEMINI_API_KEY_1..4`) | yes | comma-separated Gemini keys, rotated with cooldowns |
-| `MODEL_STRONG` / `MODEL_LITE` / `MODEL_SUPPORT` | no | model overrides (defaults: `gemini-3.8-flash`, `gemini-3.5-flash-lite`, `gemma-4`) |
+| `MODEL_STRONG` | no | primary plan-or-answer model (default: `gemini-4-hydrogen`) |
+| `MODEL_STRONG_BACKUP1` / `MODEL_STRONG_BACKUP2` | no | fallback models (defaults: `gemini-3.5-flash-lite`, `gemini-decision-1`) |
+| `MODEL_SUPPORT` | no | support-chat model (default: `gemini-3.5-flash-lite`) |
 
 ## Deploy
 

@@ -17,7 +17,6 @@ export const MODELS = {
     process.env.MODEL_STRONG_BACKUP1 ?? "gemini-3.5-flash-lite",
     process.env.MODEL_STRONG_BACKUP2 ?? "gemini-decision-1",
   ],
-  lite: process.env.MODEL_LITE ?? "gemini-3.5-flash-lite",
   support: process.env.MODEL_SUPPORT ?? "gemini-3.5-flash-lite",
 };
 
