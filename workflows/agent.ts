@@ -1,5 +1,5 @@
-import { randomUUID } from "node:crypto";
-import { createHook, getWorkflowMetadata, getWritable } from "workflow";
+import { getWritable } from "workflow";
+import { requireGreenProxyControl } from "../lib/green-proxy-controls";
 import {
   generateAgentTurn,
   MAX_AGENT_TURNS,
@@ -9,7 +9,6 @@ import {
 } from "../lib/agent";
 import {
   executeAgentTool,
-  isHighImpactTool,
   type AgentToolCall,
   type AgentToolResult,
 } from "../lib/agent-tools";
@@ -27,19 +26,7 @@ export interface AgentRunResult {
   actions: AgentActionResult[];
 }
 
-type AgentProgressEvent =
-  | {
-      status: "awaiting_approval";
-      approval_token: string;
-      label: string;
-      tool: string;
-      arguments: Record<string, unknown>;
-    }
-  | { status: "processing"; label: string; tool: string };
-
-interface ApprovalDecision {
-  approved: boolean;
-}
+type AgentProgressEvent = { status: "processing"; label: string; tool: string };
 
 export async function executeAgent(plan: AgentPlan): Promise<AgentRunResult> {
   "use workflow";
@@ -71,37 +58,7 @@ export async function executeAgent(plan: AgentPlan): Promise<AgentRunResult> {
 
     const call = response.call;
     messages.push({ role: "assistant", content: JSON.stringify({ tool_call: call }) });
-    if (isHighImpactTool(call.tool)) {
-      const approvalToken = await createApprovalTokenStep();
-      const runId = getWorkflowMetadata().workflowRunId;
-      const approval = createHook<ApprovalDecision>({
-        token: approvalToken,
-        metadata: { runId, label: call.label, tool: call.tool },
-      });
-      if (await approval.getConflict()) throw new Error("Approval token is already in use");
-      await publishAgentProgressStep({
-        status: "awaiting_approval",
-        approval_token: approvalToken,
-        label: call.label,
-        tool: call.tool,
-        arguments: call.arguments,
-      });
-      let decision: ApprovalDecision;
-      try {
-        decision = await approval;
-      } finally {
-        approval.dispose();
-      }
-      await publishAgentProgressStep({ status: "processing", label: call.label, tool: call.tool });
-      if (!decision.approved) {
-        const rejected = { ok: false, output: "The user did not approve this action." };
-        messages.push({ role: "tool", content: JSON.stringify(rejected) });
-        actions.push({ label: call.label, tool: call.tool, ...rejected });
-        continue;
-      }
-    } else {
-      await publishAgentProgressStep({ status: "processing", label: call.label, tool: call.tool });
-    }
+    await publishAgentProgressStep({ status: "processing", label: call.label, tool: call.tool });
 
     const result = await executeAgentToolStep(call);
     messages.push({ role: "tool", content: JSON.stringify(result) });
@@ -117,17 +74,15 @@ export async function executeAgent(plan: AgentPlan): Promise<AgentRunResult> {
 
 async function generateAgentTurnStep(messages: AgentMessage[]): Promise<AgentTurn> {
   "use step";
+  await requireGreenProxyControl("systemEnabled");
+  await requireGreenProxyControl("agentEnabled");
+  await requireGreenProxyControl("aiEnabled");
   return generateAgentTurn(messages);
 }
 
 async function executeAgentToolStep(call: AgentToolCall): Promise<AgentToolResult> {
   "use step";
   return executeAgentTool(call);
-}
-
-async function createApprovalTokenStep(): Promise<string> {
-  "use step";
-  return randomUUID();
 }
 
 async function publishAgentProgressStep(event: AgentProgressEvent): Promise<void> {

@@ -1,9 +1,8 @@
 import { generateAgentPlan } from "../../../lib/agent";
-import { requireAgentAuthorization } from "../../../lib/agent-auth";
-import { isHighImpactTool } from "../../../lib/agent-tools";
+import { requireGreenProxyAuthorization } from "../../../lib/green-proxy-auth";
 
 export default async ({ req }: { req: Request }) => {
-  const unauthorized = requireAgentAuthorization(req);
+  const unauthorized = requireGreenProxyAuthorization(req);
   if (unauthorized) return unauthorized;
   const body = await req.json().catch(() => ({} as { prompt?: unknown }));
   if (typeof body.prompt !== "string" || !body.prompt.trim()) {
@@ -20,7 +19,6 @@ export default async ({ req }: { req: Request }) => {
         label: step.label,
         action: `${step.tool}: ${step.label}`,
         tool: step.tool,
-        requires_confirmation: isHighImpactTool(step.tool),
       })),
       agent_plan: response,
       complete: true,

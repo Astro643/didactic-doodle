@@ -1,5 +1,6 @@
 import { start } from "workflow/api";
 import { generateAgentResponse } from "../../lib/agent";
+import { requireGreenProxyControl } from "../../lib/green-proxy-controls";
 import { parsePlan, type Plan } from "../../lib/plan";
 import { executePlan } from "../../workflows/execute";
 
@@ -9,6 +10,7 @@ export default async ({ req }: { req: Request }) => {
   if (!plan && typeof body.prompt === "string" && body.prompt.trim()) {
     const message = body.prompt.trim();
     try {
+      await requireGreenProxyControl("aiEnabled");
       const response = await generateAgentResponse(message);
       if (response.type !== "plan") {
         return Response.json({ detail: "That looks like a question, not a task." }, { status: 400 });

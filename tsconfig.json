@@ -7,5 +7,5 @@
     "skipLibCheck": true,
     "noEmit": true
   },
-  "include": ["routes/**/*", "workflows/**/*", "lib/**/*", "nitro.config.ts"]
+  "include": ["routes/**/*", "workflows/**/*", "lib/**/*", "middleware/**/*", "nitro.config.ts"]
 }
