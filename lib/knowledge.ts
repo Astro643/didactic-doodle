@@ -20,10 +20,14 @@ const RULES =
   "If something is not covered by the facts or the live status, say you are not sure rather than inventing features.";
 
 export function knowledgeSystem() {
+  return `${RULES}\n\n## Facts\n${knowledgeFacts()}`;
+}
+
+export function knowledgeFacts() {
   const keys = keyCount();
   const status =
     keys > 0
       ? `Live status: All systems operational (${keys} Gemini key(s) loaded).`
       : "Live status: DEGRADED — no Gemini API keys configured, so AI features may fail right now.";
-  return `${RULES}\n\n## Facts\n${FACTS}\n\n## ${status}`;
+  return `${FACTS}\n\n${status}`;
 }
